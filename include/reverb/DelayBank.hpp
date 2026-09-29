@@ -121,7 +121,7 @@ public:
         const int index0 = static_cast<int>(position);
         const int index1 =
             index0 + 1 >= length_ ? 0 : index0 + 1;
-        const float fraction = position - index0;
+        const float fraction = position - static_cast<float>(index0);
         return storage_[index0]
             + (storage_[index1] - storage_[index0])
                 * fraction;

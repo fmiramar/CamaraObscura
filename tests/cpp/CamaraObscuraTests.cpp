@@ -133,7 +133,7 @@ void testOrthogonalTransforms()
             -0.3f, 0.9f, 0.5f, -0.8f
         };
         creativereverb::groupedOrthogonal(
-            grouped, 2, 4, step / 20.f, 0.7f);
+            grouped, 2, 4, static_cast<float>(step) / 20.f, 0.7f);
         require(
             close(
                 creativereverb::energy(grouped, 8),
@@ -149,7 +149,7 @@ void testOrthogonalTransforms()
         const double before =
             creativereverb::energy(grouped, 6);
         creativereverb::groupedOrthogonalAngles(
-            grouped, 3, 2, step / 20.f,
+            grouped, 3, 2, static_cast<float>(step) / 20.f,
             pairAngles, 3);
         require(
             close(

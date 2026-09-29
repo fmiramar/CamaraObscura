@@ -117,7 +117,7 @@ inline float dictionaryImpulse(
 {
     if (sample < 0 || sample >= 64)
         return 0.f;
-    const float t = sample / sampleRate;
+    const float t = static_cast<float>(sample) / sampleRate;
     switch (filter) {
     case 0:
         return 0.22f * std::exp(-t * 3200.f);

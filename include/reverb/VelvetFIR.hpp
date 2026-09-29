@@ -50,7 +50,7 @@ public:
         const int active = clampValue(
             static_cast<int>(std::ceil(
                 clampValue(density, 0.f, 1.f)
-                * tapCount_)),
+                * static_cast<float>(tapCount_))),
             1, tapCount_);
         float sum = 0.f;
         for (int tap = 0; tap < active; ++tap) {
