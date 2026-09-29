@@ -1,0 +1,121 @@
+class:: GroupedFDNModel
+summary:: Prepared pairwise-coupled grouped feedback delay network
+categories:: UGens>Reverbs, Libraries>CamaraObscura
+related:: Guides/CamaraObscura, Classes/GroupedFDN
+
+description::
+
+GroupedFDNModel prepares delay lines, group-specific low/high T60 targets,
+input/output residues, damping crossovers, and one Givens angle for every
+group pair. Each group retains its own requested delay range. The architecture
+follows the grouped-FDN work of Das, Abel, and Canfield-Dafilou; this is an
+independent compact implementation.
+
+At runtime, code::coupling:: scales every prepared Givens angle. The resulting
+matrix is orthogonal for all control values before contractive attenuation is
+applied. The closest vanilla UGen is link::Classes/FreeVerb::, but GroupedFDN
+exposes distinct energy reservoirs and controllable exchange instead of one
+fixed reverb topology.
+
+classmethods::
+
+method:: twoRooms
+Prepare two four-line rooms.
+
+argument:: smallT60
+Low-band T60 of the smaller room in seconds.
+
+argument:: largeT60
+Low-band T60 of the larger room in seconds.
+
+argument:: aperture
+Symmetric pairwise coupling amount from 0 through 1.
+
+argument:: sampleRate
+Exact renderer sample rate.
+
+argument:: seed
+Deterministic delay-distribution seed.
+
+method:: fromGroups
+Prepare one through eight equally sized groups.
+
+argument:: groupSpecs
+Rows of code::[lowT60, highT60, minimumDelay, maximumDelay, lineCount]::.
+All groups currently require the same line count; at most 32 lines are used.
+
+argument:: couplingMatrix
+Finite symmetric square matrix with unit diagonal. Upper-triangle magnitudes
+from 0 through 1 map to pairwise Givens angles from zero through pi/4.
+
+argument:: sampleRate
+Exact renderer sample rate.
+
+argument:: seed
+Deterministic delay-distribution seed.
+
+method:: read
+Read a version-1 GroupedFDN model.
+
+instancemethods::
+
+method:: validate
+Validate metadata, dimensions, every pair angle, and every delay-line entry.
+
+method:: summary
+Return concise prepared-model diagnostics.
+
+method:: load
+Upload the model to a mono Buffer.
+
+method:: write
+Serialize the model.
+
+method:: free
+Free the last uploaded Buffer.
+
+method:: plotDecay
+Plot the prepared group low/high T60 values.
+
+method:: plotCoupling
+Plot the reconstructed symmetric pairwise coupling matrix.
+
+examples::
+
+code::
+(
+var model = GroupedFDNModel.twoRooms(
+    0.5, 4.5, 0.2, sampleRate: 48000, seed: 2
+);
+model.summary.postln;
+model.plotDecay;
+)
+::
+
+code::
+(
+var model = GroupedFDNModel.fromGroups(
+    [
+        [0.4, 0.25, 0.018, 0.05, 3],
+        [1.2, 0.7, 0.04, 0.09, 3],
+        [3.5, 1.8, 0.07, 0.13, 3]
+    ],
+    [
+        [1, 0.1, 0.3],
+        [0.1, 1, 0.8],
+        [0.3, 0.8, 1]
+    ],
+    sampleRate: 48000,
+    seed: 11
+);
+model.validate;
+model.plotCoupling;
+)
+::
+
+subsection:: See also
+
+link::Classes/GroupedFDN::
+link::Classes/RIRFDNModel::
+link::Classes/VelvetFDNModel::
+link::Guides/CamaraObscura::

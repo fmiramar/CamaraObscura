@@ -1,0 +1,133 @@
+class:: ModalReverbBank
+summary:: Large stereo bank of editable damped complex modes
+categories:: UGens>Reverbs, Libraries>CamaraObscura
+related:: Classes/DarkVelvetReverb, Classes/GeometryReverb, Classes/GroupedFDN, Classes/ModalPlate, Classes/ModalReverbBank, Classes/RIRFDN, Classes/VelvetFDN, Guides/CamaraObscura
+
+description::
+
+image::../Guides/ir_modalbank.png#ModalReverbBank shows a sparse mix of independent beating resonances. Each decay path is an entirely independent ringing modal filter.::
+
+Conceptually, a modal reverb bank constructs an acoustic space as a collection of thousands of independent ringing frequencies (modes). Just as a room has specific resonant frequencies that ring out when excited, this reverb uses a massive bank of resonators to build a tail. This allows for highly unnatural and creative spaces, such as rooms that only ring at harmonic intervals, or spaces whose resonances morph over time.
+
+Technically, `ModalReverbBank` implements a dense parallel bank of complex, damped resonators. It can render up to 4096 individual modes simultaneously. Because each mode is completely independent, they can be subjected to global transformations such as spectral tilting, frequency-dependent dispersion, and precise decay-time scaling. This approach is fundamentally different from delay-based reverbs, allowing for completely resonant, non-echoic tails and the ability to cleanly "freeze" the reverb by suspending the damping coefficients.
+
+ModalReverbBank directly synthesizes a space as damped complex one-pole
+modes. The pole radius uses the amplitude convention
+code::r = 10 ** (-3 / (T60 * sampleRate))::, so amplitude reaches -60 dB at
+the prepared T60. Frequencies, residues, phase sine/cosine, and structure of
+arrays are prepared; pitch/decay coefficients update once per server block.
+
+Output is stereo wet audio. code::modeCount:: is a literal construction-time
+prefix of the model from 1 through 4096. Runtime work and state are linear in
+that count. A native benchmark on an x86_64 desktop measured about 0.95,
+3.66, 14.85, and 30.52 percent of one core at 48 kHz for 64, 256, 1024, and
+2048 modes respectively; see the benchmark document for exact conditions.
+
+Drive applies a bounded tanh only to excitation, not inside modal feedback.
+Freeze suppresses excitation and moves radii toward 0.9999995 without changing
+frequency. Reset clears complex state. Block-rate parameter jumps keep poles
+stable but extreme unsmoothed modulation may click; smooth controls in the
+SynthDef when needed.
+
+The closest vanilla UGen is link::Classes/DynKlank::. ModalReverbBank supports
+much larger prepared banks, individual T60 and stereo phase/residues, freeze,
+dispersion, and deterministic measured-model extraction.
+
+classmethods::
+
+method:: ar
+
+argument:: input
+Mono audio input.
+
+argument:: modelBuf
+Loaded link::Classes/ModalReverbModel::.
+
+argument:: modeCount
+Literal active prefix from 1 through 4096, not exceeding the model.
+
+argument:: pitch
+Frequency multiplier clipped to 1/32 through 16; frequencies remain below
+0.495 times sample rate.
+
+argument:: decayScale
+T60 multiplier clipped to 0.02 through 50.
+
+argument:: dampingTilt
+Frequency-dependent T60 tilt from -4 through 4.
+
+argument:: dispersion
+Deterministic quadratic frequency warp from -1 through 1.
+
+argument:: drive
+Bounded excitation saturation amount from 0 through 16.
+
+argument:: freeze
+Stable near-lossless modal hold from 0 through 1.
+
+argument:: reset
+Rising edge clears every complex mode state.
+
+returns::
+Stereo wet audio Array.
+
+method:: kr
+Unavailable; audio-rate only.
+
+examples::
+
+The following examples have been structured into individual blocks so you can easily run them step-by-step.
+
+code::
+// Boot the server first!
+s.boot;
+
+// 1. Prepare the model and source material
+(
+~path = "~/Desktop/SuperCollider UGen Ports/04-birosca/CamaraObscura/sounds/".standardizePath;
+
+~source = Buffer.readChannel(s, ~path +/+ "vocal.wav", channels: [0]);
+// ~source = Buffer.readChannel(s, ~path +/+ "drum1.wav", channels: [0]);
+// ~source = Buffer.readChannel(s, ~path +/+ "drum2.wav", channels: [0]);
+// ~source = Buffer.readChannel(s, ~path +/+ "guitar.wav", channels: [0]);
+// ~source = Buffer.readChannel(s, ~path +/+ "violin.wav", channels: [0]);
+
+~model = ModalReverbModel.harmonic(100, 50, 0.1, 2, s.sampleRate).load(s);
+)
+
+// 2. Play the reverb (wait a moment for the buffers to load before executing this)
+(
+x = {
+    var input = PlayBuf.ar(1, ~source, BufRateScale.kr(~source), loop: 1);
+    // var input = SoundIn.ar(0); // alternative live input
+    
+    var fade = EnvGen.kr(Env([0, 1], [0.12]));
+    var wet = ModalReverbBank.ar(input, ~model)[0];
+    
+    (input + wet) * fade * 0.25 ! 2;
+}.play;
+)
+
+// 3. Clean up
+x.free;
+~source.free;
+~model.free;
+::
+
+// Creative Example: Pitch-shifting the modal resonators dynamically
+code::
+// 1. Load the model
+~creativeModel = ~creativeModel = ModalReverbModel.harmonic(150, 60, 0.05, 3, s.sampleRate).load(s);
+
+// 2. Play
+(
+y = {
+    var pitchMod = SinOsc.kr(0.1).range(0.8, 1.2);
+    ModalReverbBank.ar(Dust.ar(8), ~creativeModel, pitchMod)[0]
+}.play;
+)
+
+// 3. Clean up
+y.free;
+~creativeModel.free;
+::

@@ -1,0 +1,112 @@
+class:: VelvetFDNModel
+summary:: Prepared sparse input/output or paraunitary velvet FDN topology
+categories:: UGens>Reverbs, Libraries>CamaraObscura
+related:: Guides/CamaraObscura, Classes/VelvetFDN
+
+description::
+
+VelvetFDNModel prepares fixed sparse FIR taps around an FDN or a lossless
+filtered feedback structure. In paraunitary mode the feedback scattering is
+code::H D(z) H::, where code::H:: is a normalized Hadamard transform and
+code::D(z):: contains pure delays. Therefore its frequency response is
+unitary before decay filters. The structure is informed by the filtered
+feedback-matrix work of Schlecht and Habets and by the velvet-noise FDN work
+of Fagerström, Alary, Schlecht, and Välimäki.
+
+The closest vanilla architecture is an allpass-diffused delay network. This
+model uses deterministic sparse taps and a tested paraunitary construction
+instead of cascaded scalar allpasses.
+
+classmethods::
+
+method:: default
+Prepare sparse input and output velvet filters around a conventional FDN.
+
+argument:: delayCount
+Fixed line count from 2 through 32.
+
+argument:: t60
+Low-band T60 in seconds; the high-band target is 65 percent of this value.
+
+argument:: sampleRate
+Exact server sample rate.
+
+argument:: seed
+Deterministic delay and tap seed.
+
+method:: filteredMatrix
+Prepare an explicit-delay model.
+
+argument:: delays
+Delay seconds when below 2, otherwise sample counts.
+
+argument:: velvetFilters
+Its flattened size selects one through 16 sparse taps in this first format.
+Tap positions and signs remain deterministic rather than being copied from
+this argument.
+
+argument:: attenuationFilters
+Two values interpreted as low/high T60.
+
+argument:: feedbackStructure
+Use code::\paraunitary:: for code::H D(z) H:: feedback; any other symbol
+selects input/output filtering.
+
+argument:: sampleRate
+Exact renderer sample rate.
+
+argument:: seed
+Deterministic delay and sparse-tap seed.
+
+method:: read
+Read a version-1 VelvetFDN model.
+
+instancemethods::
+
+method:: validate
+Validate metadata, line data, sparse taps, and optional scattering delays.
+
+method:: summary
+Return concise diagnostics.
+
+method:: load
+Upload the model to a mono Buffer.
+
+method:: write
+Serialize the model.
+
+method:: free
+Free the last uploaded Buffer.
+
+examples::
+
+code::
+(
+var model = VelvetFDNModel.default(
+    8, 3.5, sampleRate: 48000, seed: 9
+);
+[model.modeName, model.summary].postln;
+)
+::
+
+code::
+(
+var model = VelvetFDNModel.filteredMatrix(
+    [0.037, 0.043, 0.051, 0.059],
+    0 ! 12,
+    [2.8, 1.4],
+    \paraunitary,
+    sampleRate: 48000,
+    seed: 4
+);
+model.validate;
+[model.modeName, model.summary].postln;
+)
+::
+
+subsection:: See also
+
+link::Classes/VelvetFDN::
+link::Classes/GroupedFDNModel::
+link::Classes/AllpassN::
+link::Guides/CamaraObscura::

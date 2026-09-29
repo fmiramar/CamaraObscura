@@ -1,0 +1,121 @@
+class:: GroupedFDN
+summary:: Stable pairwise-coupled multi-reservoir feedback delay network
+categories:: UGens>Reverbs, Libraries>CamaraObscura
+related:: Classes/DarkVelvetReverb, Classes/GeometryReverb, Classes/GroupedFDN, Classes/ModalPlate, Classes/ModalReverbBank, Classes/RIRFDN, Classes/VelvetFDN, Guides/CamaraObscura
+
+description::
+
+image::../Guides/ir_grouped.png#GroupedFDN shows the energy sloshing between sub-networks, creating a complex non-linear decay envelope where late energy swells as it transfers between the coupled modeled rooms.::
+
+Conceptually, a Grouped Feedback Delay Network (FDN) models acoustic spaces that consist of multiple distinct "zones" or coupled rooms (like a cathedral nave coupled to a transept). Instead of having one uniform cloud of reverberation, sound energy sloshes back and forth between these interconnected groups of delays, each of which can have entirely different decay characteristics.
+
+Technically, `GroupedFDN` generalizes the standard FDN architecture by organizing the delay lines into separate sub-networks. The energy coupling between these groups is controlled by a symmetric matrix that is rigorously decomposed into pairwise Givens rotations. This guarantees that the feedback matrix remains perfectly orthogonal—and thus unconditionally stable—regardless of how the user modulates the group coupling or modifies the per-group decay filters at audio rates.
+
+GroupedFDN renders equally sized delay-line groups with distinct low/high
+decay targets. Intra-group Householder reflections and a prepared Givens
+rotation for every group pair form an orthogonal lossless prototype.
+code::coupling:: scales the angles, so isolated, intermediate, and maximum
+coupling remain exactly orthogonal before two-band attenuation.
+
+The UGen returns stereo wet audio. code::groups:: and code::delaysPerGroup::
+are literal construction-time values and must match the model. The callback
+does not allocate or rebuild matrices. CPU is linear in total lines and group
+pairs; the supported maximum is 32 lines across eight groups.
+
+Freeze fades new excitation to zero and moves every per-delay attenuation
+toward 0.999999, preserving a very long stable tail without using gain above
+one. Reset clears all delays and filter states on a rising edge. Abrupt
+coupling modulation remains stable but may be audible.
+
+The closest vanilla UGen is link::Classes/FreeVerb::. GroupedFDN differs by
+making independently damped energy reservoirs and their stable exchange
+explicit rather than exposing one fixed room network.
+
+classmethods::
+
+method:: ar
+
+argument:: input
+Mono audio input.
+
+argument:: modelBuf
+Loaded link::Classes/GroupedFDNModel:: Buffer.
+
+argument:: groups
+Literal group count from 1 through 8.
+
+argument:: delaysPerGroup
+Literal equal line count per group. The product may not exceed 32.
+
+argument:: coupling
+Runtime 0 to 1 scaling of every prepared pairwise Givens angle.
+
+argument:: freeze
+Runtime 0 to 1 stable near-lossless tail hold and excitation suppression.
+
+argument:: reset
+Rising edge clears all recursive state without reallocating.
+
+returns::
+Two-channel wet audio Array.
+
+method:: kr
+Unavailable; audio-rate only.
+
+examples::
+
+The following examples have been structured into individual blocks so you can easily run them step-by-step.
+
+code::
+// Boot the server first!
+s.boot;
+
+// 1. Prepare the model and source material
+(
+~path = "~/Desktop/SuperCollider UGen Ports/04-birosca/CamaraObscura/sounds/".standardizePath;
+
+~source = Buffer.readChannel(s, ~path +/+ "vocal.wav", channels: [0]);
+// ~source = Buffer.readChannel(s, ~path +/+ "drum1.wav", channels: [0]);
+// ~source = Buffer.readChannel(s, ~path +/+ "drum2.wav", channels: [0]);
+// ~source = Buffer.readChannel(s, ~path +/+ "guitar.wav", channels: [0]);
+// ~source = Buffer.readChannel(s, ~path +/+ "violin.wav", channels: [0]);
+
+~model = GroupedFDNModel.twoRooms(0.5, 4, 0.2, s.sampleRate, 2).load(s);
+)
+
+// 2. Play the reverb (wait a moment for the buffers to load before executing this)
+(
+x = {
+    var input = PlayBuf.ar(1, ~source, BufRateScale.kr(~source), loop: 1);
+    // var input = SoundIn.ar(0); // alternative live input
+    
+    var fade = EnvGen.kr(Env([0, 1], [0.12]));
+    var wet = GroupedFDN.ar(input, ~model, 2, 4)[0];
+    
+    (input + wet) * fade * 0.25 ! 2;
+}.play;
+)
+
+// 3. Clean up
+x.free;
+~source.free;
+~model.free;
+::
+
+// Creative Example: Extreme energy transfer with LFO modulation
+code::
+// 1. Load the model
+~creativeModel = ~creativeModel = GroupedFDNModel.twoRooms(0.1, 8, 0.05, s.sampleRate, 4).load(s);
+
+// 2. Play
+(
+y = {
+    var modInput = BPF.ar(WhiteNoise.ar * Decay.ar(Impulse.ar(0.5), 0.1), SinOsc.kr(0.2).range(400, 2000));
+    GroupedFDN.ar(modInput, ~creativeModel, 2, 4)[0]
+}.play;
+)
+
+// 3. Clean up
+y.free;
+~creativeModel.free;
+::

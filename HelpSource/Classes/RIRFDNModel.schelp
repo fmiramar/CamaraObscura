@@ -1,0 +1,104 @@
+class:: RIRFDNModel
+summary:: Prepared compact late-field model fitted from an impulse response
+categories:: UGens>Reverbs, Libraries>CamaraObscura
+related:: Guides/CamaraObscura, Classes/RIRFDN
+
+description::
+
+RIRFDNModel stores a stable late-field FDN. The bundled code::rir2fdn:: tool
+detects the direct peak, selects the late response, fits broadband and
+two-band Schroeder energy decays, chooses deterministic prime delays, writes
+this model, renders verification audio, and produces a text report. The
+pipeline is influenced by the RIR-to-FDN literature, especially DAFx-24
+RIR2FDN, without incorporating its source code or neural estimators.
+
+This model intentionally excludes direct sound and early reflections. The
+closest vanilla facility is a long link::Classes/PartConv:: impulse response;
+RIRFDNModel uses far less memory and permits stable decay/tone editing, but it
+cannot retain the measured FIR's exact echo pattern.
+
+classmethods::
+
+method:: read
+Read a model created by code::rir2fdn:: or code::write::.
+
+argument:: path
+Prepared text-model path, not an audio path.
+
+method:: fromAnalysis
+Alias for code::read::, emphasizing that analysis already occurred offline.
+
+method:: synthetic
+Create a deterministic model without a measured RIR.
+
+argument:: t60Low
+Low-band reverberation T60 in seconds. The renderer converts it to the
+per-delay amplitude feedback gain that produces a 60 dB energy-decay curve.
+
+argument:: t60High
+High-band reverberation T60 using the same convention.
+
+argument:: delays
+Line count from 2 through 32.
+
+argument:: sampleRate
+Exact renderer sample rate.
+
+argument:: seed
+Deterministic topology seed.
+
+instancemethods::
+
+method:: validate
+Validate metadata, topology, T60/filter data, gains, and delay limits.
+
+method:: summary
+Return model diagnostics.
+
+method:: load
+Upload the model to a mono Buffer.
+
+method:: write
+Serialize the model.
+
+method:: free
+Free the last uploaded Buffer.
+
+method:: plotDecay
+Plot line low/high T60 targets.
+
+method:: plotResponse
+Plot the same broad two-band fit used by this first model.
+
+examples::
+
+code::
+(
+var model = RIRFDNModel.synthetic(
+    3.2, 1.7, 8, sampleRate: 48000, seed: 4
+);
+model.summary.postln;
+model.plotDecay;
+)
+::
+
+code::
+(
+var path = PathName.tmp +/+ "creative-reverbs-example.rfdn";
+var model = RIRFDNModel.synthetic(
+    1.4, 0.7, 6, sampleRate: 48000, seed: 12
+);
+var restored;
+model.write(path);
+restored = RIRFDNModel.read(path);
+restored.summary.postln;
+File.delete(path);
+)
+::
+
+subsection:: See also
+
+link::Classes/RIRFDN::
+link::Classes/PartConv::
+link::Classes/GeometryReverbScene::
+link::Guides/CamaraObscura::

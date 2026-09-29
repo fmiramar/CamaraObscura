@@ -1,0 +1,121 @@
+class:: RIRFDN
+summary:: Editable stable late field fitted from a measured room response
+categories:: UGens>Reverbs, Libraries>CamaraObscura
+related:: Classes/DarkVelvetReverb, Classes/GeometryReverb, Classes/GroupedFDN, Classes/ModalPlate, Classes/ModalReverbBank, Classes/RIRFDN, Classes/VelvetFDN, Guides/CamaraObscura
+
+description::
+
+image::../Guides/ir_rirfdn.png#RIRFDN shows an instantly smooth and dense exponential decay modeled directly from the Schroeder integration of a real space impulse response.::
+
+Conceptually, `RIRFDN` acts as a bridge between the realism of convolution reverbs and the flexibility of algorithmic reverbs. While traditional convolution exactly reproduces a recorded Room Impulse Response (RIR) but cannot be easily altered, this reverb extracts the statistical decay characteristics of a real room and synthesizes them using a flexible algorithmic structure, allowing you to tweak the "real" room in ways convolution cannot.
+
+Technically, the system utilizes a deterministic offline Schroeder integration analysis to extract frequency-dependent decay rates (T60) from an impulse response. `RIRFDN` then uses these extracted parameters to tune a highly optimized Feedback Delay Network (FDN). This allows the UGen to capture the late-field spectral signature of a measured space with a fraction of the CPU and memory cost of full convolution, while providing the ability to freeze, modulate, or infinitely extend the tail.
+
+RIRFDN renders a prepared compact FDN fitted to the late part of an impulse
+response. Analysis is external: the calculation callback sees only validated
+delay, damping, residue, and matrix values. This first renderer reproduces
+broad decay and two-band coloration, not the original early reflections,
+fine comb response, spatial cues, or exact waveform.
+
+Output is stereo wet audio. An optional compatible morph model runs as a
+complete second stable network; outputs are crossfaded, avoiding unsafe raw
+coefficient interpolation. Compatibility requires the same sample rate, line
+count, topology fields, and channel count. Two networks approximately double
+CPU and delay memory even when code::morph:: is zero.
+
+Freeze suppresses excitation and approaches a stable per-delay gain of
+0.999999. Reset clears both networks. The closest vanilla UGen is
+link::Classes/PartConv::; RIRFDN is editable and compact, but deliberately
+less exact than literal measured convolution.
+
+classmethods::
+
+method:: ar
+
+argument:: input
+Mono audio input.
+
+argument:: modelBuf
+Loaded primary link::Classes/RIRFDNModel::.
+
+argument:: morphBuf
+Loaded compatible secondary model or -1 for no second network.
+
+argument:: morph
+Output crossfade from primary at 0 to secondary at 1.
+
+argument:: decayScale
+Stable T60 multiplier clipped to 0.05 through 20.
+
+argument:: tone
+Low/high decay tilt from -2 through 2.
+
+argument:: freeze
+Stable near-lossless hold and excitation suppression.
+
+argument:: reset
+Rising edge clears both recursive networks.
+
+returns::
+Stereo wet audio Array.
+
+method:: kr
+Unavailable; audio-rate only.
+
+examples::
+
+The following examples have been structured into individual blocks so you can easily run them step-by-step.
+
+code::
+// Boot the server first!
+s.boot;
+
+// 1. Prepare the model and source material
+(
+~path = "~/Desktop/SuperCollider UGen Ports/04-birosca/CamaraObscura/sounds/".standardizePath;
+
+~source = Buffer.readChannel(s, ~path +/+ "vocal.wav", channels: [0]);
+// ~source = Buffer.readChannel(s, ~path +/+ "drum1.wav", channels: [0]);
+// ~source = Buffer.readChannel(s, ~path +/+ "drum2.wav", channels: [0]);
+// ~source = Buffer.readChannel(s, ~path +/+ "guitar.wav", channels: [0]);
+// ~source = Buffer.readChannel(s, ~path +/+ "violin.wav", channels: [0]);
+
+~model = RIRFDNModel.synthetic(sampleRate: s.sampleRate).load(s);
+)
+
+// 2. Play the reverb (wait a moment for the buffers to load before executing this)
+(
+x = {
+    var input = PlayBuf.ar(1, ~source, BufRateScale.kr(~source), loop: 1);
+    // var input = SoundIn.ar(0); // alternative live input
+    
+    var fade = EnvGen.kr(Env([0, 1], [0.12]));
+    var wet = RIRFDN.ar(input, ~model)[0];
+    
+    (input + wet) * fade * 0.25 ! 2;
+}.play;
+)
+
+// 3. Clean up
+x.free;
+~source.free;
+~model.free;
+::
+
+// Creative Example: Infinite freeze via feedback modulation
+code::
+// 1. Load the model
+~creativeModel = ~creativeModel = RIRFDNModel.synthetic(sampleRate: s.sampleRate).load(s);
+
+// 2. Play
+(
+y = {
+    var freezeEnv = LFPulse.kr(0.2, 0, 0.5).range(1.0, 1.1);
+    RIRFDN.ar(Dust.ar(5), ~creativeModel, t60Mult: freezeEnv)[0]
+}.play;
+)
+
+// 3. Clean up
+y.free;
+~creativeModel.free;
+::

@@ -1,0 +1,127 @@
+class:: DarkVelvetProfile
+summary:: Prepared sparse-tail envelope and spectral dictionary probabilities
+categories:: UGens>Reverbs, Libraries>CamaraObscura
+related:: Guides/CamaraObscura, Classes/DarkVelvetReverb
+
+description::
+
+DarkVelvetProfile prepares the time-varying energy, pulse-density scale, and
+six dictionary-filter probabilities used by link::Classes/DarkVelvetReverb::.
+It is based on the extended dark velvet noise formulation of Fagerström,
+Schlecht, and Välimäki (2024), with an original fixed buffer format and
+deterministic generator.
+
+The profile stores piecewise-linear dB endpoints. It does not store audio and
+does not perform convolution. The closest vanilla facility is an envelope
+stored in a Buffer; this model additionally carries spectral probabilities,
+duration, version, sample rate, seed, and validation metadata.
+
+classmethods::
+
+method:: exponential
+Create a two-point exponential-amplitude tail.
+
+argument:: duration
+Tail duration in seconds, greater than zero and at most 30.
+
+argument:: t60
+Amplitude T60 in seconds.
+
+argument:: bands
+Reserved compatibility argument. The current dictionary has six filters.
+
+argument:: sampleRate
+Exact server sample rate expected by the renderer.
+
+argument:: seed
+Deterministic model seed.
+
+method:: envelope
+Create an arbitrary piecewise dB profile.
+
+argument:: times
+Increasing seconds beginning at zero and ending at or before 30 seconds.
+
+argument:: levels
+dB values corresponding one-to-one with code::times::.
+
+argument:: filters
+Nil for the default darkening evolution, six weights shared by every segment,
+or one six-weight row per segment. Rows are normalized.
+
+argument:: sampleRate
+Exact renderer sample rate.
+
+argument:: seed
+Deterministic model seed.
+
+method:: fromIR
+Analyze the file associated with a Buffer, beginning at code::startTime::.
+
+method:: fromFile
+Analyze short-window late RMS from an audio file. This prepares a broadband
+profile; it is not a full bandwise RIR fitter.
+
+method:: read
+Read a version-1 CamaraObscura text model.
+
+instancemethods::
+
+method:: validate
+Validate metadata, segment continuity, duration, density, and filter
+probabilities.
+
+method:: summary
+Return model family, version, payload size, sample rate, channels, and seed.
+
+method:: load
+Upload the serialized model to a mono server Buffer.
+
+method:: write
+Write the portable line-oriented prepared-model format.
+
+method:: free
+Free the last Buffer returned by code::load::.
+
+method:: plotEnvelope
+Plot prepared broadband dB endpoints.
+
+method:: plotBandEnergy
+Plot the six dictionary probabilities by segment.
+
+examples::
+
+code::
+(
+var profile = DarkVelvetProfile.exponential(
+    4, 2.5, sampleRate: 48000, seed: 17
+);
+profile.summary.postln;
+profile.plotEnvelope;
+)
+::
+
+code::
+(
+var profile = DarkVelvetProfile.envelope(
+    [0, 0.6, 1.8, 3],
+    [-60, 0, -15, -80],
+    [
+        [1, 0, 0, 0, 1, 0],
+        [1, 1, 1, 1, 1, 1],
+        [4, 0, 1, 3, 0, 0]
+    ],
+    sampleRate: 48000,
+    seed: 3
+);
+profile.validate;
+profile.plotBandEnergy;
+)
+::
+
+subsection:: See also
+
+link::Classes/DarkVelvetReverb::
+link::Classes/Buffer::
+link::Classes/Env::
+link::Guides/CamaraObscura::
