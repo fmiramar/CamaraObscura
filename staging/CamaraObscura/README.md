@@ -1,5 +1,3 @@
-![Camara Obscura Banner](HelpSource/Guides/camara_obscura_banner.png)
-
 # CamaraObscura
 
 CamaraObscura is an experimental extension containing seven

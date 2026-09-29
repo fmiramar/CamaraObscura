@@ -1,0 +1,111 @@
+class:: ModalReverbModel
+summary:: Prepared frequencies, decays, residues, and phases for a modal space
+categories:: UGens>Reverbs, Libraries>CamaraObscura
+related:: Guides/CamaraObscura, Classes/ModalReverbBank
+
+description::
+
+ModalReverbModel stores up to 4096 damped complex modes. Each row contains
+frequency, amplitude T60, input residue, stereo output residues, and phase.
+Models can be deliberately random or harmonic, supplied explicitly, or
+extracted from integer-PCM WAV by the bundled dependency-free
+code::modal_extract:: tool.
+
+The extractor uses refined Hann-window FFT peaks and a two-band Schroeder
+decay estimate. It is a transparent compact approximation, not ESPRIT or a
+matrix-pencil estimator. The closest vanilla UGen is link::Classes/DynKlank::;
+ModalReverbBank adds per-mode decay metadata, stereo residues, phase, stable
+freeze, and prepared models suited to much larger banks.
+
+classmethods::
+
+method:: fromModes
+Create a model from parallel mode arrays.
+
+argument:: frequencies
+Positive modal frequencies below the inferred model Nyquist frequency.
+
+argument:: decays
+Positive amplitude T60 seconds.
+
+argument:: gains
+Scalar gains or stereo gain pairs.
+
+argument:: sampleRate
+Model sample rate in hertz. Frequencies must remain below its Nyquist
+frequency, and the loaded model must match the server sample rate.
+
+method:: fromIR
+Synchronously run the installed code::modal_extract.py:: tool on integer-PCM
+WAV and read its temporary model.
+
+argument:: path
+WAV path.
+
+argument:: modes
+Requested peak count from 1 through 4096.
+
+method:: fromAnalysis
+Read a model already produced by the external tool.
+
+method:: random
+Create logarithmically distributed deterministic frequencies and decays.
+
+method:: harmonic
+Create integer harmonics below Nyquist.
+
+method:: read
+Read a version-1 modal model.
+
+instancemethods::
+
+method:: validate
+Validate metadata plus every modal frequency, decay, residue, and phase.
+
+method:: summary
+Return concise diagnostics.
+
+method:: load
+Upload to a mono Buffer.
+
+method:: write
+Serialize the model.
+
+method:: free
+Free the last uploaded Buffer.
+
+method:: plotModes
+Plot modal frequencies.
+
+method:: plotDecay
+Plot modal T60 values.
+
+examples::
+
+code::
+(
+var model = ModalReverbModel.random(
+    512, [70, 15000], [0.4, 5],
+    seed: 12, sampleRate: 48000
+);
+model.summary.postln;
+model.plotModes;
+)
+::
+
+code::
+(
+var model = ModalReverbModel.harmonic(
+    55, 128, 4, sampleRate: 48000
+);
+model.validate;
+model.plotDecay;
+)
+::
+
+subsection:: See also
+
+link::Classes/ModalReverbBank::
+link::Classes/ModalPlateModel::
+link::Classes/DynKlank::
+link::Guides/CamaraObscura::
