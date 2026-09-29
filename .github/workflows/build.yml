@@ -70,6 +70,10 @@ jobs:
       - name: Stage extension
         run: cmake --install build --config Release
 
+      - name: Ad-hoc codesign macOS binaries
+        if: runner.os == 'macOS'
+        run: codesign --force -s - stage/CamaraObscura/*.scx
+
       - name: Upload extension
         uses: actions/upload-artifact@v4
         with:
