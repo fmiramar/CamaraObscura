@@ -84,9 +84,11 @@ s.boot;
 
 // 1. Prepare the model and source material
 (
-~path = "~/Desktop/SuperCollider UGen Ports/04-birosca/CamaraObscura/sounds/".standardizePath;
+// Use a fallback to ExampleFiles.child if the external sample bundle is not installed
+~path = Platform.userExtensionDir +/+ "CamaraObscura/sounds/";
+~srcFile = if(File.exists(~path +/+ "vocal.wav")) { ~path +/+ "vocal.wav" } { ExampleFiles.child };
 
-~source = Buffer.readChannel(s, ~path +/+ "vocal.wav", channels: [0]);
+~source = Buffer.readChannel(s, ~srcFile, channels: [0]);
 // ~source = Buffer.readChannel(s, ~path +/+ "drum1.wav", channels: [0]);
 // ~source = Buffer.readChannel(s, ~path +/+ "drum2.wav", channels: [0]);
 // ~source = Buffer.readChannel(s, ~path +/+ "guitar.wav", channels: [0]);
