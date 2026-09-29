@@ -81,13 +81,13 @@ s.boot;
 (
 // Use a fallback to ExampleFiles.child if the external sample bundle is not installed
 ~path = Platform.userExtensionDir +/+ "CamaraObscura/sounds/";
-~srcFile = if(File.exists(~path +/+ "vocal.wav")) { ~path +/+ "vocal.wav" } { ExampleFiles.child };
+~load = { |name| if(File.exists(~path +/+ name)) { ~path +/+ name } { ExampleFiles.child } };
 
-~source = Buffer.readChannel(s, ~srcFile, channels: [0]);
-// ~source = Buffer.readChannel(s, ~path +/+ "drum1.wav", channels: [0]);
-// ~source = Buffer.readChannel(s, ~path +/+ "drum2.wav", channels: [0]);
-// ~source = Buffer.readChannel(s, ~path +/+ "guitar.wav", channels: [0]);
-// ~source = Buffer.readChannel(s, ~path +/+ "violin.wav", channels: [0]);
+~source = Buffer.readChannel(s, ~load.value("vocal.wav"), channels: [0]);
+// ~source = Buffer.readChannel(s, ~load.value("drum1.wav"), channels: [0]);
+// ~source = Buffer.readChannel(s, ~load.value("drum2.wav"), channels: [0]);
+// ~source = Buffer.readChannel(s, ~load.value("guitar.wav"), channels: [0]);
+// ~source = Buffer.readChannel(s, ~load.value("violin.wav"), channels: [0]);
 
 ~model = DarkVelvetProfile.exponential(3, 2, sampleRate: s.sampleRate, seed: 1).load(s);
 )
