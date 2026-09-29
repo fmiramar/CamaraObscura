@@ -9,3 +9,19 @@ __pycache__/
 build*/
 staging/
 *.zip
+
+# Local automation and helper scripts
+append_examples.py
+fix_guide.py
+fix_quark.scd
+generate_irs.scd
+generate_plots.py
+inject_banner.py
+insert_images.py
+make_banner.py
+patch_examples.py
+patch_guide.py
+recompile_and_doc.scd
+test_path.scd
+test_scdoc.scd
+update_docs.py
